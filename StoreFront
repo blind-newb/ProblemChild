@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Product Display</title>
+    <style>
+        #ImageContainer {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            align-content: center;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        #ImageContainer img {
+            align-content: center;
+            height: 300px;
+            width: 300px;
+            object-fit: cover;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: 1px solid black;
+        }
+        .image-caption {
+            align-content: center;
+            color: black;
+            font-size: .9em;
+            font-weight: bold;
+            line-height: 1em;
+            text-align: center;
+            margin-top: 5px;
+            max-width: 100%;
+            overflow-wrap: word;
+        }
+        .imageContainer {
+            display: inline-block;
+            width: 300px;
+            box-sizing: border-box;
+            padding: 10px;
+            text-align: center;
+            align-content: center;
+        }
+        .wspsc_add_cart_submit {
+          background-color: #800000;
+          border: none;
+          color: white;
+          font-weight: bold;
+          padding: 10px;
+          text-align: center;
+          text-decoration: none;
+          display: inline-block;
+          cursor: pointer;
+          border-radius: 8px;
+          height: 15px;
+          font-size: fit-content;
+          vertical-align: top;
+          line-height: 2px;
+        }
+        .wspsc_add_cart_submit:hover{
+          background-color: #f8dede;
+          color: #800000;
+          border-color: #800000;
+          border-style: solid;
+          border-width: 1px;
+          height: 15px;
+          font-size: fit-content;
+        }
+    </style>
+</head>
+<body>
+    <div id="ImageContainer"></div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var images = [];
+        function loadImages() {
+          var perPage = 50; /* set the number of images to fetch in each request */
+          var currentPage = 1;
+          var totalPages = 1;
+          function fetchImages() {
+            $.getJSON('https://stitchedfromtheheartcreations.com/wp-json/wp/v2/media', {
+              per_page: perPage,
+              page: currentPage
+            }, function(data, textStatus, jqXHR) {
+              images = images.concat(data);
+              if (jqXHR.getResponseHeader('X-WP-TotalPages')) {
+                totalPages = parseInt(jqXHR.getResponseHeader('X-WP-TotalPages'));
+              }
+              if (currentPage < totalPages) {
+                currentPage++;
+                fetchImages();
+              } else {
+                console.log('All images loaded');
+              }
+            }).fail(function() {
+              console.log('No images found');
+            });
+          }
+          fetchImages();
+        }
+        function addItemToCart(item) {
+          cart.push(item);
+          localStorage.setItem("cart", JSON.stringify(cart));
+          refreshCart();
+        }
+        function showConfirmation(productName) {
+          var confirmation = confirm(productName + ' added to cart.\nDo you want to view your cart now?');
+          if (confirmation) {
+            window.location.href = 'https://stitchedfromtheheartcreations.com/cart/';
+          } else {
+            alert.hide;
+          }
+        }
+        function displayImages(keyword) {
+          var matchedImages = [];
+          $.each(images, function(index, image) {
+            if (image.title.rendered.indexOf(keyword) !== -1) {
+              matchedImages.push(image);
+            }
+          });
+          var imageHTML = '';
+          $.each(matchedImages, function(index, image) {
+            var imageUrl = image.source_url;
+            var imageDescription = image.description.rendered;
+            /* extract the price from the image description */
+            var priceStr = imageDescription.match(/Price:\s*\$([0-9.]+)/i);
+            var price = 0;
+            if (priceStr) {
+              /* convert the price string to a number */
+              price = Number(priceStr[1]);
+            }
+            /* replace the PRODUCT-PRICE placeholder in the shortcode with the actual price */
+            imageHTML += '<div class="image-caption">';
+            imageHTML += '<div>' + imageDescription + '</div>';
+            imageHTML += '[wp_cart_button name="' + imageDescription + '" price="' + price.toFixed(2) + '"]';
+            imageHTML += '</div>';
+          });
+          $('#ImageContainer').html(imageHTML);
+          /* bind the click event to the Add To Cart button */
+          $('.add-to-cart-button').click(function() {
+            var productName = $(this).data('product-name');
+            var productPrice = $(this).data('product-price');
+            addToCart(productName, productPrice);
+            showConfirmation(productName);
+          });
+        }
+        loadImages();
+        $('#kitchenHandTowelsBtn').click(function() {displayImages('Kitchen Hand Towel');
+        });
+        $('#bathHandTowelsBtn').click(function() {displayImages('Bath Hand Towel');
+        });
+    });
+    </script>
+</body>
+</html>
